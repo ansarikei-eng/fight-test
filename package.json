@@ -1,0 +1,10 @@
+{
+  "name": "sansad-showdown",
+  "private": true,
+  "workspaces": [
+    "Server"
+  ],
+  "scripts": {
+    "start": "node Server/server.js"
+  }
+}
