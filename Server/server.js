@@ -39,15 +39,19 @@ function makeRoom(offer = null) {
     answer: null,
     signals: new Map(),
     waiters: new Set(),
-    hostSocket: null
+    hostSocket: null,
+    guestSocket: null,
+    relayMode: false
   };
   rooms.set(code, room);
 
   const expiry = setTimeout(() => {
     if (rooms.get(code) === room) {
       rooms.delete(code);
-      if (room.hostSocket && room.hostSocket.readyState === room.hostSocket.OPEN) {
-        room.hostSocket.close(4404, 'Room expired');
+      for (const socket of [room.hostSocket, room.guestSocket]) {
+        if (socket && socket.readyState === socket.OPEN) {
+          socket.close(4404, 'Room expired');
+        }
       }
     }
   }, ROOM_LIFETIME_MS);
@@ -57,6 +61,20 @@ function makeRoom(offer = null) {
 
 function notifyRoom(room) {
   for (const waiter of room.waiters) waiter();
+}
+
+function relayGameplay(room, sender, payload, isBinary = false) {
+  const target = sender === room.hostSocket ? room.guestSocket : room.hostSocket;
+  if (!target || target.readyState !== target.OPEN) {
+    if (sender.readyState === sender.OPEN) sender.close(1011, 'Player disconnected');
+    return;
+  }
+  if (target.bufferedAmount >= 128 * 1024) {
+    sender.close(1013, 'Relay overloaded');
+    return;
+  }
+  if (isBinary) target.send(payload, { binary: true });
+  else target.send(payload);
 }
 
 function waitForRoom(room, predicate, timeoutMs) {
@@ -188,24 +206,54 @@ wss.on('connection', (ws, request) => {
   const params = new URL(request.url, 'http://localhost').searchParams;
   let room;
 
-  if (params.has('code')) {
+  if (params.has('join')) {
+    room = rooms.get(String(params.get('join')).toUpperCase());
+    if (!room || !room.relayMode) return ws.close(4404, 'Room not found');
+    if (!room.hostSocket || room.hostSocket.readyState !== room.hostSocket.OPEN) {
+      return ws.close(4404, 'Host disconnected');
+    }
+    if (room.guestSocket && room.guestSocket.readyState === room.guestSocket.OPEN) {
+      return ws.close(4409, 'Room is full');
+    }
+    ws.relayMode = true;
+    ws.role = 'guest';
+    room.guestSocket = ws;
+    ws.send(JSON.stringify({ t: 'joined', code: room.code }));
+    room.hostSocket.send(JSON.stringify({ t: 'peer-connected' }));
+  } else if (params.has('code')) {
     room = rooms.get(String(params.get('code')).toUpperCase());
     if (!room) return ws.close(4404, 'Room expired');
     if (params.get('secret') !== room.secret) return ws.close(4403, 'Invalid room secret');
     room.hostSocket = ws;
+    ws.role = 'host';
     ws.send(JSON.stringify({ t: 'resumed', ready: Boolean(room.offer) }));
     if (room.answer) ws.send(JSON.stringify({ t: 'answer', desc: room.answer }));
   } else {
     room = makeRoom();
     room.hostSocket = ws;
+    room.relayMode = params.get('transport') === 'relay';
+    ws.relayMode = room.relayMode;
+    ws.role = 'host';
     ws.send(JSON.stringify({ t: 'room', code: room.code, secret: room.secret, ice }));
   }
 
-  ws.on('message', (message) => {
+  ws.on('message', (message, isBinary) => {
+    if (ws.relayMode && isBinary) {
+      relayGameplay(room, ws, message, true);
+      return;
+    }
+
     try {
       const msgStr = message.toString();
       const data = JSON.parse(msgStr);
-      if (data.t === 'offer' && data.desc) {
+      if (ws.relayMode && data.t === 'heartbeat') {
+        if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'heartbeat-ack', id: data.id }));
+      } else if (ws.relayMode && data.t === 'relay' &&
+          (data.channel === 'ctrl' || data.channel === 'input-text')) {
+        relayGameplay(room, ws, msgStr);
+      } else if (ws.relayMode && data.t === 'close') {
+        ws.close(1000, 'Room client closed');
+      } else if (data.t === 'offer' && data.desc) {
         room.offer = data.desc;
         if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ t: 'ready' }));
         notifyRoom(room);
@@ -218,7 +266,22 @@ wss.on('connection', (ws, request) => {
   });
 
   ws.on('close', () => {
-    if (room && room.hostSocket === ws) room.hostSocket = null;
+    if (!room) return;
+    if (room.hostSocket === ws) {
+      room.hostSocket = null;
+      if (room.relayMode) {
+        rooms.delete(room.code);
+        if (room.guestSocket && room.guestSocket.readyState === room.guestSocket.OPEN) {
+          room.guestSocket.send(JSON.stringify({ t: 'room-closed' }));
+          room.guestSocket.close(1000, 'Host disconnected');
+        }
+      }
+    } else if (room.guestSocket === ws) {
+      room.guestSocket = null;
+      if (room.hostSocket && room.hostSocket.readyState === room.hostSocket.OPEN) {
+        room.hostSocket.send(JSON.stringify({ t: 'peer-disconnected' }));
+      }
+    }
   });
 });
 
