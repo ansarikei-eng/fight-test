@@ -14,7 +14,13 @@ const wss = new WebSocketServer({ server, path: '/api/room/ws' });
 
 const rooms = new Map();
 const ROOM_LIFETIME_MS = 10 * 60 * 1000;
-const ice = { iceServers: [], relay: false };
+const ice = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ],
+  relay: false
+};
 
 function makeRoom(offer = null) {
   let code;
