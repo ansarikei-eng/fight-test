@@ -333,6 +333,30 @@ input:focus-visible {
   backdrop-filter: blur(16px);
 }
 
+#virat-model-reference {
+  z-index: 60;
+  position: fixed;
+  top: max(54px, calc(env(safe-area-inset-top) + 52px));
+  left: max(14px, env(safe-area-inset-left));
+  color: var(--ui-gold);
+  background: rgba(10, 11, 16, 0.76);
+  border: 1px solid var(--ui-line);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  text-decoration: none;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+#virat-model-reference:focus-visible,
+#virat-model-reference:hover {
+  border-color: var(--ui-line-bright);
+  color: var(--ui-ink);
+}
+
 #support-btn {
   color: #17110a;
   background: linear-gradient(112deg, #ffe08a, var(--ui-gold) 48%, var(--ui-saffron));
@@ -1005,6 +1029,13 @@ input:focus-visible {
     left: max(8px, env(safe-area-inset-left));
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  #virat-model-reference {
+    top: max(44px, calc(env(safe-area-inset-top) + 40px));
+    left: max(8px, env(safe-area-inset-left));
+    padding: 5px 8px;
+    font-size: 9px;
   }
 
   #title::before {

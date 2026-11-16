@@ -57,11 +57,14 @@
         if (url.includes('/models/')) {
           const fileName = url.split('/models/')[1].split('?')[0];
           try {
-            const localRes = await origFetch.call(this, './models/' + fileName);
+            const cacheKey = fileName === 'virat.glb' && url.includes('?')
+              ? url.slice(url.indexOf('?'))
+              : '';
+            const localRes = await origFetch.call(this, './models/' + fileName + cacheKey);
             if (localRes.ok) return localRes;
           } catch (e) {}
 
-          const fighterFallbacks = ['modi.glb', 'rahul.glb', 'yogi.glb'];
+          const fighterFallbacks = ['rahul.glb', 'yogi.glb'];
           if (fighterFallbacks.includes(fileName)) {
             for (const fb of FALLBACK_MODELS) {
               try {
@@ -237,6 +240,7 @@
     <div id="select" class="screen hidden">
       <h1>SELECT YOUR NETA</h1>
       <div id="brand-credit">A and A build</div>
+      <a id="virat-model-reference" href="https://sketchfab.com/models/aa39b38f7ba74bd89375937c4d07b204/embed" target="_blank" rel="noopener noreferrer">VIRAT 3D MODEL · SKETCHFAB · DEVENDER SINGH ↗</a>
       <button id="support-btn" type="button" aria-label="Support the game with UPI"><span class="cup">🪔</span><span>Mithai khilao · Support</span></button>
       <div class="sel-vs">VS</div>
       <button id="plate-p1" class="plate p1" type="button" aria-label="Choose your neta">
@@ -264,9 +268,9 @@
         </div>
         <div id="bapu-quest" class="hidden"></div>
         <div class="grid">
-          <button class="tile" type="button" data-tile="modi" style="--accent: #ff9933">
-            <img data-portrait="modi" src="https://fightkaro.com/faces/modi.webp?v=20261101_smooth" alt="MitraMan" />
-            <span class="tile-name">MITRAMAN</span>
+          <button class="tile" type="button" data-tile="virat" style="--accent: #1e5ab4">
+            <img src="./models/virat-placeholder.svg" alt="Virat Kohli" />
+            <span class="tile-name">VIRAT KOHLI</span>
             <i class="cur p1">1P</i><i class="cur p2">CPU</i>
           </button>
           <button class="tile" type="button" data-tile="rahul" style="--accent: #2e9bff">
