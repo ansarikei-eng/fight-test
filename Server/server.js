@@ -200,7 +200,17 @@ app.all('/api/room', async (req, res, next) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, '../')));
+app.use(express.static(path.join(__dirname, '../'), {
+  etag: false,
+  lastModified: false,
+  setHeaders(res, filePath) {
+    if (/\.(html|js|css|glb|svg|webp)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 wss.on('connection', (ws, request) => {
   const params = new URL(request.url, 'http://localhost').searchParams;

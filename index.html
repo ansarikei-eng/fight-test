@@ -35,9 +35,11 @@
     <!-- Local asset compatibility and fallback handling -->
     <script>
       const FALLBACK_MODELS = [
-        'didi.glb', 'amit.glb', 'lalu.glb', 'trump.glb',
-        'ravi.glb', 'nitin.glb', 'dhruv.glb', 'mbapu.glb'
+        'didi.glb', 'amit.glb', 'lalu.glb', 'dhoni.glb',
+        'ravi.glb', 'nitin.glb', 'dhruv.glb', 'mbapu.glb',
+        'rohit.glb', 'virat.glb'
       ];
+      const ASSET_VERSION = '20261118_character_refresh';
 
       const origFetch = window.fetch;
       window.fetch = async function(input, init) {
@@ -55,16 +57,16 @@
         }
 
         if (url.includes('/models/')) {
-          const fileName = url.split('/models/')[1].split('?')[0];
+          const fileName = url.split('/models/')[1].split('?')[0].split('/').pop();
           try {
-            const cacheKey = fileName === 'virat.glb' && url.includes('?')
-              ? url.slice(url.indexOf('?'))
+            const cacheKey = fileName.endsWith('.glb') || fileName.endsWith('.svg')
+              ? '?v=' + ASSET_VERSION
               : '';
             const localRes = await origFetch.call(this, './models/' + fileName + cacheKey);
             if (localRes.ok) return localRes;
           } catch (e) {}
 
-          const fighterFallbacks = ['rahul.glb', 'yogi.glb'];
+          const fighterFallbacks = ['yogi.glb'];
           if (fighterFallbacks.includes(fileName)) {
             for (const fb of FALLBACK_MODELS) {
               try {
@@ -88,7 +90,7 @@
           document.querySelectorAll('img[data-portrait]').forEach(img => {
             const name = img.getAttribute('data-portrait');
             if (name && (!img.src || img.src.includes('127.0.0.1') || img.src.includes('localhost') || img.src.includes(window.location.host))) {
-              img.src = `https://fightkaro.com/faces/${name}.webp?v=20261107_real`;
+              img.src = `https://fightkaro.com/faces/${name}.webp?v=${ASSET_VERSION}`;
             }
           });
         };
@@ -269,13 +271,13 @@
         <div id="bapu-quest" class="hidden"></div>
         <div class="grid">
           <button class="tile" type="button" data-tile="virat" style="--accent: #1e5ab4">
-            <img src="./models/virat-placeholder.svg" alt="Virat Kohli" />
+            <img src="./models/virat-placeholder.svg?v=20261118_character_refresh" alt="Virat Kohli" />
             <span class="tile-name">VIRAT KOHLI</span>
             <i class="cur p1">1P</i><i class="cur p2">CPU</i>
           </button>
-          <button class="tile" type="button" data-tile="rahul" style="--accent: #2e9bff">
-            <img data-portrait="rahul" src="https://fightkaro.com/faces/rahul.webp?v=20261101_smooth" alt="Yatra Boy" />
-            <span class="tile-name">YATRA BOY</span>
+          <button class="tile" type="button" data-tile="rohit" style="--accent: #1e5ab4">
+            <img src="./models/rohit-avatar.svg?v=20261118_character_refresh" alt="Rohit Sharma" />
+            <span class="tile-name">ROHIT SHARMA</span>
             <i class="cur p1">1P</i><i class="cur p2">CPU</i>
           </button>
           <button class="tile" type="button" data-tile="didi" style="--accent: #22b35e">
@@ -283,9 +285,9 @@
             <span class="tile-name">DEEDEE</span>
             <i class="cur p1">1P</i><i class="cur p2">CPU</i>
           </button>
-          <button class="tile" type="button" data-tile="trump" style="--accent: #e0262f">
-            <img data-portrait="trump" src="https://fightkaro.com/faces/trump.webp?v=20261101_smooth" alt="Tariff Taau" />
-            <span class="tile-name">TARIFF TAAU</span>
+          <button class="tile" type="button" data-tile="dhoni" style="--accent: #1e5ab4">
+            <img src="./models/dhoni-avatar.svg?v=20261118_character_refresh" alt="MS Dhoni" />
+            <span class="tile-name">MS DHONI</span>
             <i class="cur p1">1P</i><i class="cur p2">CPU</i>
           </button>
           <button class="tile" type="button" data-tile="yogi" style="--accent: #f05a00">
